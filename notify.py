@@ -1,9 +1,6 @@
-from plyer import notification
+import winotify
 
-def notify(link, timeout=5):
-    notification.notify(
-        title="Concertify",
-        message="There are new concerts!",
-        timeout=timeout,
-        actions=[link]
-    )
+def notify(title, message, webpage_url, event_count):
+    notification = winotify.Notification(title, message)
+    notification.add_actions(label="You have {event_count} new events!", launch=webpage_url)
+    notification.show()
