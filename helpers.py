@@ -1,2 +1,2 @@
-artist_fields = ('spotify_id', 'name', 'relevant')
-event_fields = ('name', 'location', 'artist', 'date', 'url')
+artist_fields = ('spotify_id', 'name', 'deceased', 'ignored')
+event_fields = ('artist', 'name', 'location', 'date', 'url', 'notified')
