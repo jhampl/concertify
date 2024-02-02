@@ -1,49 +1,55 @@
-from get_artists import get_artists
-from get_artist_relevance import get_artist_relevance
-from get_concerts import get_concerts
-import storage
-import socketserver
-import http.server
-import notify.notify as notify
+import time
+import os
+import winotify
+from multiprocessing import Process
+from server import start_webserver
+from scraper import update_all
+from storage import get_new_relevant_events
+
+LAST_UPDATE = os.path.abspath("./LAST_UPDATE.txt")
+PORT = 8080
 
 def main():
-    print("Authenticating...")
+    print("Starting web UI...") 
+    server_process = Process(daemon=True, target=start_webserver, args=(PORT,))
+    server_process.start()
     
-    print("Getting artists...")
-    artists = get_artists.get_artists()
-    for artist in artists:
-        artist['relevance'] = get_artist_relevance(artist['name'])
-    storage.store_artists(artists)
-    # TODO store in batches of 50, because of spotify api limit, change get_artists
-    concerts = get_concerts(artists)
-    # TODO add notified field to concerts
+    print("Scheduling scraper...")
+    scraper_process = Process(daemon=True, target=update_all)
+    scraper_process.start()
     
-    # TODO alert
-    notify(concerts)
+    # Check for new events 12 hours
+    while True:
+        if is_time_to_update():
+            write_last_update_time()
+            try:
+                update_all()
+            except:
+                print("Error updating events and artists")
+        new_events = get_new_relevant_events() 
+        if new_events:
+            notify(new_events)
+        time.sleep(3600)  # Sleep for 1 hour before checking again
 
+def is_time_to_update():
+    if not os.path.exists(LAST_UPDATE):
+        return True
+    
+    with open(LAST_UPDATE, "r") as file:
+        last_update_time = float(file.read())
+        current_time = time.time()
+        elapsed_time = current_time - last_update_time
+        return elapsed_time >= 43200 # 12 hours in seconds
 
-DIRECTORY = './page'
-class ConcertifyRequestHandler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=DIRECTORY, **kwargs)
+def write_last_update_time():
+    current_time = time.time()
+    with open(LAST_UPDATE, "w") as file:
+        file.write(str(current_time))
 
-    cgi_directories = ['./page/cgi-bin']
-
-    def do_POST(self):
-        # TODO get headers and add artist to ignore
-        self.send_response(303)
-        self.send_header('Location','/')
-        self.end_headers()
-
-        message = "Hello, World! Here is a POST response"
-        #self.wfile.write(bytes(message, "utf8"))
-
-def start_webserver():
-    PORT = 8080
-
-    with socketserver.TCPServer(("", PORT), ConcertifyRequestHandler) as httpd:
-        print(f"Server started at http://localhost:{PORT}")
-        httpd.serve_forever()
+def notify(event_count):
+    notification = winotify.Notification("Concertify", "New Events")
+    notification.add_actions(label=f"You have {event_count} new events!", launch="http://localhost:8080/")
+    notification.show()
 
 if __name__ == "__main__":
     main()
