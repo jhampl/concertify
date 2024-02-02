@@ -2,9 +2,10 @@ CREATE TABLE artists (
 	id INTEGER AUTO_INCREMENT PRIMARY KEY,
 	spotify_id VARCHAR,
 	name VARCHAR,
-	relevant BOOL DEFAULT TRUE,
+	active BOOL DEFAULT TRUE,
+	ignored BOOL DEFAULT FALSE
 	);
-CREATE UNIQUE INDEX ux_artists_name_relevant ON artists (name, relevant);
+CREATE UNIQUE INDEX ux_artists ON artists (name, spotify_id);
 
 CREATE TABLE events (
 	id INTEGER AUTO_INCREMENT PRIMARY KEY,
@@ -12,7 +13,8 @@ CREATE TABLE events (
 	location VARCHAR,
 	artist_id INTEGER,
 	date DATETIME,
-	calendar_notified BOOL DEFAULT FALSE,
+	url VARCHAR,
+	dismissed BOOL DEFAULT FALSE,
 	FOREIGN KEY (artist_id) REFERENCES artists(id)
 	);
-CREATE UNIQUE INDEX ux_events_artist_id_date_location ON events (artist_id, date, location);
+CREATE UNIQUE INDEX ux_events ON events (artist_id, date, location);

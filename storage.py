@@ -29,16 +29,24 @@ sqlite3.register_converter("date", convert_date)
 sqlite3.register_adapter(bool, adapt_bool)
 sqlite3.register_converter("BOOL", convert_bool)
 
-def store_artists(artists):
+def insert_artists(artists):
     with con:
-        con.execute("DELETE FROM artists")
-        con.executemany(f"INSERT INTO artists ({', '.join(artist_fields)}) VALUES (:{', :'.join(artist_fields)})", artists)
+        con.executemany(f"INSERT OR IGNORE INTO artists ({', '.join(artist_fields)}) VALUES (:{', :'.join(artist_fields)})", artists)
         con.commit()
 
-def store_events(events):
+def insert_events(events):
     with con:
-        con.execute("DELETE FROM events")
-        con.executemany(f"INSERT INTO events ({', '.join(event_fields)}) VALUES (:{', :'.join(event_fields)})", events)
+        con.executemany(f"INSERT OR IGNORE INTO events ({', '.join(event_fields)}) VALUES (:{', :'.join(event_fields)})", events)
+        con.commit()
+
+def dismiss_event(event_id):
+    with con:
+        con.execute("UPDATE events SET dismissed = 1 WHERE id = ?", (event_id,))
+        con.commit()
+
+def ignore_artist(artist_id):
+    with con:
+        con.execute("UPDATE artists SET ignore = 1 WHERE id = ?", (artist_id,))
         con.commit()
 
 def get_all_artists():
@@ -47,7 +55,7 @@ def get_all_artists():
 
 def get_relevant_artists():
     with con:
-        return con.execute(f"SELECT {', '.join(artist_fields)} FROM artists")
+        return con.execute(f"SELECT {', '.join(artist_fields)} FROM artists WHERE relevance > 0")
 
 def get_all_events():
     with con:
@@ -55,4 +63,24 @@ def get_all_events():
 
 def get_new_events():
     with con:
-        return con.execute(f"SELECT {', '.join(event_fields)} FROM events WHERE notified = 0")
+        return con.execute(f"SELECT {', '.join(event_fields)} FROM events WHERE dismissed = 0")
+
+def get_new_relevant_events():
+    with con:
+        return con.execute(f"SELECT {', '.join(event_fields)} FROM events WHERE dismissed = 0 AND artist_id IN (SELECT id FROM artists WHERE active = 1 AND ignore = 0)")
+
+def get_artist_name(artist_id):
+    with con:
+        return con.execute("SELECT name FROM artists WHERE id = ?", (artist_id,)).fetchone()
+    
+if __name__ == "__main__":
+    insert_artists([{'spotify_id': '1', 'name': 'A', 'active': 1, 'ignored': 0}, {'spotify_id': '2', 'name': 'B', 'active': 0, 'ignored': 0}])
+    insert_artists([{'spotify_id': '1', 'name': 'A', 'active': 1, 'ignored': 0}, {'spotify_id': '2', 'name': 'B', 'active': 0, 'ignored': 0}])
+    insert_artists([{'spotify_id': '1', 'name': 'A', 'active': 1, 'ignored': 0}, {'spotify_id': '2', 'name': 'B', 'active': 0, 'ignored': 0}])
+    insert_artists([{'spotify_id': '1', 'name': 'A', 'active': 1, 'ignored': 1}, {'spotify_id': '2', 'name': 'B', 'active': 0, 'ignored': 1}])
+    insert_events([{'artist_id': 1, 'name': 'A', 'date': datetime.date.today(), 'location': 'Berlin (DE)', 'url': 'https://example.com', 'dismissed': False}],)
+    insert_events([{'artist_id': 1, 'name': 'A', 'date': datetime.date.today(), 'location': 'Berlin (DE)', 'url': 'https://example.com', 'dismissed': False}],)
+    insert_events([{'artist_id': 1, 'name': 'A', 'date': datetime.date.today(), 'location': 'Berlin (DE)', 'url': 'https://example.com', 'dismissed': False}],)
+    insert_events([{'artist_id': 1, 'name': 'A', 'date': datetime.date.today(), 'location': 'Berlini2 (DE)', 'url': 'https://example.com', 'dismissed': False}],)
+    print(get_all_artists().fetchall())
+    print(get_all_events().fetchall())
