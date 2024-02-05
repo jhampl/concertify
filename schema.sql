@@ -5,7 +5,7 @@ CREATE TABLE artists (
 	active BOOL DEFAULT TRUE,
 	ignored BOOL DEFAULT FALSE
 	);
-CREATE UNIQUE INDEX ux_artists ON artists (name, spotify_id);
+CREATE UNIQUE INDEX ux_artists ON artists (name, spotify_id, active);
 
 CREATE TABLE events (
 	id INTEGER AUTO_INCREMENT PRIMARY KEY,

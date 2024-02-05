@@ -14,5 +14,3 @@ def get_artist_relevance(artist_name):
         if heading.text.lower() == 'years active':
             return False
     return True
-
-print(get_artist_relevance('The Beatles'))

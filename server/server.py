@@ -11,7 +11,8 @@ def generate_calendar_link(event):
     params = {
         "action": "TEMPLATE",
         "dates": date + "/" + date,
-        "text": " ".join((event["artist"], event["name"])),
+        "text": event["artist"],
+        "details": event["name"],
         "location": event["location"]
     }
     encoded_params = urllib.parse.urlencode(params)
