@@ -24,6 +24,10 @@
         h1 {
             margin: 0;
         }
+        h2 {
+            margin: 0;
+            font-size: larger;
+        }
 
         a {
             color: #fff;
@@ -94,13 +98,13 @@
                 {% for event in events %}
                 <tr>
                     <td>
-                        <h3>{{ event.artist }}</h3>
+                        <a href="{{ event.url }}" target="_blank"> <h2>{{ event.artist }}</h2>
                         <label>
-                            {{ event.artist }}<br>
                             {{ event.name}} <br>
                             {{ format_date(event.date) }}<br>
                             {{ event.location }}
-                        </label>
+                        </label> 
+                        </a>
                     </td>
                     <td>
                         <a href="{{ generate_calendar_link(event) }}" target="_blank" class="addToCalendar">Add to
